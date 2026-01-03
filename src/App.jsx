@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router";
+import { toast, ToastContainer } from "react-toastify";
 
-const App = () => {
+const App = ({ backendLink }) => {
   const [contact, setContact] = useState({
     name: "",
     email: "",
@@ -9,7 +10,7 @@ const App = () => {
     message: "",
   });
 
-  const [success, setSuccess] = useState();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -17,38 +18,36 @@ const App = () => {
   };
 
   const handleSubmit = async (e) => {
+    setIsLoading(true);
     e.preventDefault();
-    const response = await fetch("http://localhost:3000/add-contact", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(contact),
-    });
-    setContact({
-      name: "",
-      email: "",
-      phone: "",
-      message: "",
-    });
-    if (response.status === 200) setSuccess(true);
-    else setSuccess(false);
+    try {
+      const response = await fetch(`${backendLink}/add-contact`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(contact),
+      });
+      if (response.status === 200) toast.success("Contact added successfully");
+      else toast.error("Something went wrong");
+    } catch (error) {
+      console.log(error);
+    } finally {
+      setIsLoading(false);
+      setContact({
+        name: "",
+        email: "",
+        phone: "",
+        message: "",
+      });
+    }
   };
 
   return (
     <div className="flex justify-center items-center min-h-screen">
+      <ToastContainer position="bottom-left" />
       <div className="shadow-blue-950 shadow-2xl w-fit p-8 rounded-xl">
         <h1 className="text-center text-5xl font-bold mb-8">Contact Form</h1>
-        {success === true && (
-          <p className="text-center text-green-500 text-2xl font-bold my-8">
-            Contact added successfully
-          </p>
-        )}
-        {success === false && (
-          <p className="text-center text-red-500 text-2xl font-bold my-8">
-            Something went wrong
-          </p>
-        )}
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-xs">
           <div className="flex justify-between items-center">
             <label htmlFor="name">Name</label>
@@ -102,7 +101,12 @@ const App = () => {
           <div className="flex justify-between mt-4">
             <button
               type="submit"
-              className="bg-blue-500 text-white w-fit rounded px-6 py-2 cursor-pointer hover:bg-blue-600 transition-colors"
+              disabled={isLoading}
+              className={`${
+                isLoading ? "bg-gray-500" : "bg-blue-500"
+              } text-white w-fit rounded px-6 py-2 cursor-pointer ${
+                !isLoading && "hover:bg-blue-600"
+              } transition-colors`}
             >
               Submit
             </button>
